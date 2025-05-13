@@ -51,8 +51,7 @@ Insecure server using `MD5(secret
 
 
 
-attack.py
-
+client.py
 
 
 Performs the length extension attack to forge a MAC for an extended message.
