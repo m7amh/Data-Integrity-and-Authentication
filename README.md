@@ -1,67 +1,45 @@
-# 🚀 MAC Forgery Attack Demo
+# 🔐 MAC Forgery Attack Simulation
 
-**Securing the Future of Data Integrity**
-
----
-
-## 🌍 Vision-Driven Cybersecurity
-
-Welcome to a live demonstration of how **weak MAC constructions** can collapse under modern cryptographic attacks—and how we fix them.
-This project was developed for the **Data Integrity and Authentication** course at *Alexandria National University*, blending **real-world security challenges** with **cutting-edge countermeasures**.
-
-> **Bottom Line:** We don't just break things. We secure them better.
+**Fortifying Data Integrity in the Digital Era**
 
 ---
 
-### 👨‍💻 Crafted by:
+## 🎯 Overview
+
+This project demonstrates how insecure MAC constructions using MD5 can be exploited via a **Length Extension Attack**, and how this vulnerability can be mitigated with a secure HMAC-based solution. It’s a practical case study developed as part of the *Data Integrity and Authentication* course at Alexandria National University, showcasing both offensive and defensive security in action.
+
+> **We don’t just expose the weakness — we build the fix.**
+
+---
+
+## 🧠 Team Behind the Code
 
 * **Mohammed Abdulrahman Awad Khaled** (ID: 2205114)
 * **Mohammed Ahmed Ramadan Al-Arjawi** (ID: 2205043)
 * **Omar Ahmed Hameed Mohammed** (ID: 2205213)
 
-### 🎓 Supervised by:
-
-**Dr. Maged Abdelaty**
-📅 Submission: *May , 2025*
+**Supervised by:** Dr. Maged Abdelaty
+📅 **Submission Date:** May 16, 2025
 
 ---
 
-## 🔒 Why It Matters
+## 🧩 Project Structure
 
-In today's connected world, a forged message like:
-
-```
-amount=100&to=alice&admin=true
-```
-
-...should never be accepted as valid.
-
-Yet many systems rely on insecure MAC constructions like:
-
-```
-MAC = MD5(secret || message)
-```
-
-This project proves how that approach **fails under attack**, and how **HMAC** saves the day.
+| File Name                 | Purpose                                                                |   |            |
+| ------------------------- | ---------------------------------------------------------------------- | - | ---------- |
+| `server.py`               | Simulates an insecure server using \`MD5(secret                        |   | message)\` |
+| `client.py`               | Launches a length extension attack to forge a valid MAC                |   |            |
+| `secure_server.py`        | Provides a secure implementation using **HMAC** to mitigate the attack |   |            |
+| `Background Write-Up.pdf` | Theoretical explanation of the attack and its mechanics                |   |            |
+| `Mitigation Write-Up.pdf` | Technical analysis of secure alternatives using HMAC                   |   |            |
 
 ---
 
-## 📦 Project Structure
+## ⚙️ Requirements
 
-| Component                          | Purpose                                                              |   |            |
-| ---------------------------------- | -------------------------------------------------------------------- | - | ---------- |
-| `server.py`                        | Simulates a server using insecure MAC logic: \`MD5(secret            |   | message)\` |
-| `client.py`                        | Performs a precise length extension attack to forge a valid MAC      |   |            |
-| `secure_server.py`                 | Reinforces the system with **HMAC**, immune to this class of attacks |   |            |
-
----
-
-## ⚙️ Environment Setup
-
-### Requirements:
-
-* Python 3.6+
-* `pycryptodome`:
+* **Python 3.6+**
+* **Dependencies:**
+  Install cryptographic library:
 
 ```bash
 pip install pycryptodome
@@ -71,13 +49,13 @@ pip install pycryptodome
 
 ## 🚀 How to Run
 
-### Step 1: Launch the Insecure Server
+### 1. Launch the Insecure Server
 
 ```bash
 python server.py
 ```
 
-✅ You’ll see:
+**Expected Output:**
 
 ```
 Original message: amount=100&to=alice
@@ -89,72 +67,79 @@ MAC verification succeeded (attack succeeded).
 
 ---
 
-### Step 2: Execute the Forgery Attack
+### 2. Execute the Forgery Attack
 
 ```bash
 python client.py
 ```
 
-🔓 Expected output:
+**Expected Output:**
 
 ```
 Forged Message: b'amount=100&to=alice...[padding]...&admin=true'
 Forged MAC: ec4488b7e7bd24418b8ab38b6e5ae927
 ```
 
-✅ *Forged message accepted by insecure server.*
+✅ The forged message is accepted by the insecure server — attack successful.
 
 ---
 
-## 🧠 How the Attack Works
+## 🧠 Attack Logic Explained
 
-* Uses the **Merkle-Damgård weakness** in MD5
-* Assumes a known message and MAC
-* Rebuilds internal state, appends new data (`&admin=true`)
-* Computes a **valid forged MAC** without knowing the key
+This is a textbook **Length Extension Attack** that exploits the internal structure of the MD5 hash function, which follows the **Merkle–Damgård construction**. Here's what we do:
 
-> It's not hacking. It's **mathematical precision**.
+1. Start with a valid message and its MAC (e.g., `amount=100&to=alice`)
+2. Assume a key length (e.g., 16 bytes)
+3. Apply MD5-compatible padding
+4. Continue hashing with `&admin=true`
+5. Recreate a valid forged MAC without knowing the secret key
 
----
-
-## 🔐 Our Secure Countermeasure: HMAC (in `secure_server.py`)
-
-* HMAC resists length extension and state forgery
-* Our upcoming secure implementation follows best practices from **RFC 2104**
+> This is a demonstration of **cryptographic exploitation with mathematical precision**.
 
 ---
 
-## 📈 Strategic Takeaways
+## 🔐 The Fix: Secure Implementation with HMAC
 
-* **Impact**: Demonstrates real, practical risks in insecure systems
-* **Solution**: Builds a bridge to secure MAC use via HMAC
-* **Scalability**: Easily extendable to secure APIs, financial apps, and identity verification systems
-* **Innovation**: Combines clarity, cryptographic depth, and developer usability
+HMAC solves the problem by introducing a fundamentally different construction:
 
----
+* Immune to length extension
+* Relies on inner and outer padding with the secret key
+* Supported by all modern cryptographic libraries
 
-## 🌟 Beyond the Classroom
-
-This is more than a course project. It’s a **security blueprint** for the next generation of systems.
-
-We envision our work being integrated into:
-
-* Fintech platforms
-* IoT device firmware
-* Secure messaging apps
-* Compliance-oriented APIs (e.g., HIPAA, GDPR)
+Check the secure implementation in `secure_server.py`.
 
 ---
 
-## 🤝 Join the Security Revolution
+## 📈 Real-World Applications
 
-📩 **Reach out to the team** for collaboration, consultation, or integration discussions.
-Let's build systems that **can't be tricked—only trusted**.
+This demonstration maps directly to real-world systems:
+
+* 💳 **Fintech Transactions:** Protect financial data from tampering
+* 📡 **IoT Commands:** Ensure device integrity and trust
+* 🔐 **API Security:** Prevent forged requests and injections
+* 🏥 **Healthcare Systems:** Safeguard patient records and medical logs
 
 ---
 
-**🔐 Invest in Security. Invest in Us.**
+## 🌟 Why This Project Matters
+
+* ✅ **Realistic Threat Simulation**
+* ✅ **Educational Value**
+* ✅ **Hands-on Defensive Techniques**
+* ✅ **Easily Extendable to SHA-1, SHA-256, etc.**
+
+> We don’t just stop at proof-of-concept — we deliver secure, production-ready alternatives.
 
 ---
 
-> “Hackers find the flaw. Professionals close it. Visionaries prevent it.”
+## 🤝 Let’s Build Secure Systems Together
+
+We're open to collaboration, integration, and research partnerships. Whether you're in education, software development, or cybersecurity consulting, this project serves as a launchpad for better systems.
+
+---
+
+📂 **GitHub Repo:** [github.com/m7amh/Data-Integrity-and-Authentication](https://github.com/m7amh/Data-Integrity-and-Authentication)
+
+---
+
+> “Hackers find flaws. Professionals patch them. Visionaries prevent them.”
