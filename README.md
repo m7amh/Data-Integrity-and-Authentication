@@ -52,7 +52,7 @@ This project proves how that approach **fails under attack**, and how **HMAC** s
 | ---------------------------------- | -------------------------------------------------------------------- | - | ---------- |
 | `server.py`                        | Simulates a server using insecure MAC logic: \`MD5(secret            |   | message)\` |
 | `client.py`                        | Performs a precise length extension attack to forge a valid MAC      |   |            |
-| `secure_server.py` *(coming soon)* | Reinforces the system with **HMAC**, immune to this class of attacks |   |            |
+| `secure_server.py`                 | Reinforces the system with **HMAC**, immune to this class of attacks |   |            |
 
 ---
 
