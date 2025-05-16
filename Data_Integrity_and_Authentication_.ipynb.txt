@@ -1,0 +1,327 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "source": [
+        "!pip install pycryptodome # Make sure pycryptodome is installed"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "0InC3f7AbaMX",
+        "outputId": "ace70a1b-6796-4719-e1ef-a45f5fafa32f"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Requirement already satisfied: pycryptodome in /usr/local/lib/python3.11/dist-packages (3.22.0)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import hashlib\n",
+        "\n",
+        "SECRET_KEY = b'supersecretkey'  # Unknown to attacker\n",
+        "\n",
+        "def generate_mac(message: bytes) -> str:\n",
+        "    return hashlib.md5(SECRET_KEY + message).hexdigest()\n",
+        "\n",
+        "def verify(message: bytes, mac: str) -> bool:\n",
+        "    expected_mac = generate_mac(message)\n",
+        "    return mac == expected_mac\n",
+        "\n",
+        "def main():\n",
+        "    # Example message\n",
+        "    message = b\"amount=100&to=alice\"\n",
+        "    mac = generate_mac(message)\n",
+        "\n",
+        "    print(\"=== Server Simulation ===\")\n",
+        "    print(f\"Original message: {message.decode()}\")\n",
+        "    print(f\"MAC: {mac}\")\n",
+        "    print(\"\\n--- Verifying legitimate message ---\")\n",
+        "    if verify(message, mac):\n",
+        "        print(\"MAC verified successfully. Message is authentic.\\n\")\n",
+        "\n",
+        "    # Simulated attacker-forged message\n",
+        "    forged_message = b\"amount=100&to=alice\" + b\"&admin=true\"\n",
+        "    forged_mac = mac  # Attacker provides same MAC (initially)\n",
+        "\n",
+        "    print(\"--- Verifying forged message ---\")\n",
+        "    if verify(forged_message, forged_mac):\n",
+        "        print(\"MAC verified successfully (unexpected).\")\n",
+        "    else:\n",
+        "        print(\"MAC verification failed (as expected).\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "KQERc9FGbo2p",
+        "outputId": "3f1a1784-6fa3-4196-c29d-1e8da029df8f"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "=== Server Simulation ===\n",
+            "Original message: amount=100&to=alice\n",
+            "MAC: 614d28d808af46d3702fe35fae67267c\n",
+            "\n",
+            "--- Verifying legitimate message ---\n",
+            "MAC verified successfully. Message is authentic.\n",
+            "\n",
+            "--- Verifying forged message ---\n",
+            "MAC verification failed (as expected).\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# attack.py\n",
+        "\n",
+        "import hashlib\n",
+        "import struct\n",
+        "from Crypto.Hash import MD5\n",
+        "\n",
+        "\n",
+        "def hex_to_state(h):\n",
+        "    # تحويل الهاش إلى الحالة الداخلية (A,B,C,D)\n",
+        "    bytes_hash = bytes.fromhex(h)\n",
+        "    a = struct.unpack('<I', bytes_hash[0:4])[0]\n",
+        "    b = struct.unpack('<I', bytes_hash[4:8])[0]\n",
+        "    c = struct.unpack('<I', bytes_hash[8:12])[0]\n",
+        "    d = struct.unpack('<I', bytes_hash[12:16])[0]\n",
+        "    return a, b, c, d\n",
+        "\n",
+        "def md5_pad(message_bit_length):\n",
+        "    # MD5 padding كما هو في Merkle-Damgård\n",
+        "    message_bit_length += 64  # account for the length field itself\n",
+        "    pad_len = (56 - (message_bit_length // 8) % 64) % 64\n",
+        "    padding = b'\\x80' + b'\\x00' * (pad_len - 1)\n",
+        "    padding += struct.pack('<Q', message_bit_length)\n",
+        "    return padding\n",
+        "\n",
+        "# الرسالة المعروفة والـ MAC الخاص بها\n",
+        "intercepted_message = b\"amount=100&to=alice\"\n",
+        "original_mac = \"614d28d808af46d3702fe35fae67267c\"  # استخدم القيمة من server.py\n",
+        "data_to_append = b\"&admin=true\"\n",
+        "secret_length_guess = 16  # طول المفتاح السري (في هذا المثال نعرف أنه 16 بايت)\n",
+        "\n",
+        "# حساب الطول المحذوف حتى بداية البيانات الجديدة\n",
+        "message_bit_length = (secret_length_guess + len(intercepted_message)) * 8\n",
+        "pad = md5_pad(message_bit_length)\n",
+        "\n",
+        "# إعادة الحساب من الحالة الداخلية باستخدام Crypto.Hash.MD5\n",
+        "h = MD5.new()\n",
+        "h.update(intercepted_message)\n",
+        "# Pad the message to a block boundary\n",
+        "\n",
+        "# Assuming original_mac is the MAC of intercepted_message\n",
+        "# Set the internal state of MD5 to the original_mac\n",
+        "h.digest_size = 16\n",
+        "h.MD5_state = struct.unpack('<4I', bytes.fromhex(original_mac))\n",
+        "# Now you can continue hashing with the new data\n",
+        "h.update(pad + data_to_append)\n",
+        "forged_mac = h.hexdigest()\n",
+        "\n",
+        "\n",
+        "print(\"Forged Message:\", intercepted_message + pad + data_to_append)\n",
+        "print(\"Forged MAC:\", forged_mac)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "CaposeXoanvn",
+        "outputId": "4f231ff8-3935-4c5e-d04f-e40ecd7dd88e"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Forged Message: b'amount=100&to=alice\\x80\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00X\\x01\\x00\\x00\\x00\\x00\\x00\\x00&admin=true'\n",
+            "Forged MAC: ec4488b7e7bd24418b8ab38b6e5ae927\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# secure_server.py\n",
+        "import hmac\n",
+        "import hashlib\n",
+        "\n",
+        "SECRET_KEY = b'supersecretkey'\n",
+        "\n",
+        "def generate_hmac(message: bytes) -> str:\n",
+        "    return hmac.new(SECRET_KEY, message, hashlib.md5).hexdigest()\n",
+        "\n",
+        "def verify_hmac(message: bytes, mac: str) -> bool:\n",
+        "    expected = generate_hmac(message)\n",
+        "    return hmac.compare_digest(expected, mac)\n",
+        "\n",
+        "def main():\n",
+        "    # رسالة أصلية\n",
+        "    message = b\"amount=100&to=alice\"\n",
+        "    mac = generate_hmac(message)\n",
+        "\n",
+        "    print(\"=== Secure Server Simulation ===\")\n",
+        "    print(f\"Original message: {message.decode()}\")\n",
+        "    print(f\"HMAC: {mac}\")\n",
+        "\n",
+        "    print(\"\\n--- Verifying legitimate message ---\")\n",
+        "    if verify_hmac(message, mac):\n",
+        "        print(\"✅ HMAC verified successfully. Message is authentic.\\n\")\n",
+        "\n",
+        "    # رسالة مزورة من attack.py\n",
+        "    forged_message = b\"amount=100&to=alice\\x80\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00X\\x01\\x00\\x00\\x00\\x00\\x00\\x00&admin=true\"\n",
+        "    forged_mac = \"ec4488b7e7bd24418b8ab38b6e5ae927\"\n",
+        "\n",
+        "    print(\"--- Verifying forged message with HMAC ---\")\n",
+        "    if verify_hmac(forged_message, forged_mac):\n",
+        "        print(\"❌ Forgery succeeded unexpectedly!\")\n",
+        "    else:\n",
+        "        print(\"✅ Forgery detected and rejected!\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Een6EP3je5vW",
+        "outputId": "ff5279d3-6f0b-4c6f-fd3d-c5bfa5de7290"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "=== Secure Server Simulation ===\n",
+            "Original message: amount=100&to=alice\n",
+            "HMAC: 616843154afc11960423deb0795b1e68\n",
+            "\n",
+            "--- Verifying legitimate message ---\n",
+            "✅ HMAC verified successfully. Message is authentic.\n",
+            "\n",
+            "--- Verifying forged message with HMAC ---\n",
+            "✅ Forgery detected and rejected!\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [],
+      "metadata": {
+        "id": "L9zD0BUPdFP2"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# attack.py\n",
+        "\n",
+        "import hashlib\n",
+        "import struct\n",
+        "from Crypto.Hash import MD5\n",
+        "\n",
+        "\n",
+        "def hex_to_state(h):\n",
+        "    # تحويل الهاش إلى الحالة الداخلية (A,B,C,D)\n",
+        "    bytes_hash = bytes.fromhex(h)\n",
+        "    a = struct.unpack('<I', bytes_hash[0:4])[0]\n",
+        "    b = struct.unpack('<I', bytes_hash[4:8])[0]\n",
+        "    c = struct.unpack('<I', bytes_hash[8:12])[0]\n",
+        "    d = struct.unpack('<I', bytes_hash[12:16])[0]\n",
+        "    return a, b, c, d\n",
+        "\n",
+        "def md5_pad(message_bit_length):\n",
+        "    # MD5 padding كما هو في Merkle-Damgård\n",
+        "    message_bit_length += 64  # account for the length field itself\n",
+        "    pad_len = (56 - (message_bit_length // 8) % 64) % 64\n",
+        "    padding = b'\\x80' + b'\\x00' * (pad_len - 1)\n",
+        "    padding += struct.pack('<Q', message_bit_length)\n",
+        "    return padding\n",
+        "\n",
+        "# الرسالة المعروفة والـ MAC الخاص بها\n",
+        "intercepted_message = b\"amount=100&to=alice\"\n",
+        "original_mac = \"616843154afc11960423deb0795b1e68\"  # استخدم القيمة من server.py\n",
+        "data_to_append = b\"&admin=true\"\n",
+        "secret_length_guess = 16  # طول المفتاح السري (في هذا المثال نعرف أنه 16 بايت)\n",
+        "\n",
+        "# حساب الطول المحذوف حتى بداية البيانات الجديدة\n",
+        "message_bit_length = (secret_length_guess + len(intercepted_message)) * 8\n",
+        "pad = md5_pad(message_bit_length)\n",
+        "\n",
+        "# إعادة الحساب من الحالة الداخلية باستخدام Crypto.Hash.MD5\n",
+        "h = MD5.new()\n",
+        "h.update(intercepted_message)\n",
+        "# Pad the message to a block boundary\n",
+        "\n",
+        "# Assuming original_mac is the MAC of intercepted_message\n",
+        "# Set the internal state of MD5 to the original_mac\n",
+        "h.digest_size = 16\n",
+        "h.MD5_state = struct.unpack('<4I', bytes.fromhex(original_mac))\n",
+        "# Now you can continue hashing with the new data\n",
+        "h.update(pad + data_to_append)\n",
+        "forged_mac = h.hexdigest()\n",
+        "\n",
+        "\n",
+        "print(\"Forged Message:\", intercepted_message + pad + data_to_append)\n",
+        "print(\"Forged MAC:\", forged_mac)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "s5QKVS5fe9mv",
+        "outputId": "290c07ff-cd3b-461a-e7d1-ed7c3bdc9c5f"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Forged Message: b'amount=100&to=alice\\x80\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00X\\x01\\x00\\x00\\x00\\x00\\x00\\x00&admin=true'\n",
+            "Forged MAC: ec4488b7e7bd24418b8ab38b6e5ae927\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
