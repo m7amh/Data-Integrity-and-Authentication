@@ -25,7 +25,7 @@ def md5_pad(message_bit_length):
 intercepted_message = b"amount=100&to=alice"
 original_mac = "614d28d808af46d3702fe35fae67267c"  # Use the value from server.py
 data_to_append = b"&admin=true"
-secret_length_guess = 16  # طول المفتاح السري (في هذا المثال نعرف أنه 16 بايت)
+secret_length_guess = 16  
 
 # Calculate the deleted length up to the beginning of the new data
 message_bit_length = (secret_length_guess + len(intercepted_message)) * 8
