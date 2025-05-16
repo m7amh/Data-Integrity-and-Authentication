@@ -12,7 +12,7 @@ def verify_hmac(message: bytes, mac: str) -> bool:
     return hmac.compare_digest(expected, mac)
 
 def main():
-    # رسالة أصلية
+    
     message = b"amount=100&to=alice"
     mac = generate_hmac(message)
 
@@ -24,7 +24,7 @@ def main():
     if verify_hmac(message, mac):
         print("✅ HMAC verified successfully. Message is authentic.\n")
 
-    # رسالة مزورة من attack.py
+    
     forged_message = b"amount=100&to=alice\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X\x01\x00\x00\x00\x00\x00\x00&admin=true"
     forged_mac = "ec4488b7e7bd24418b8ab38b6e5ae927"
 
