@@ -16,7 +16,7 @@ This project demonstrates how insecure MAC constructions using MD5 can be exploi
 
 * **Mohammed Abdulrahman Awad Khaled** (ID: 2205114)
 * **Mohammed Ahmed Ramadan Al-Arjawi** (ID: 2205043)
-* **Omar Ahmed Hameed Mohammed** (ID: 2205213)
+* **[Omar Ahmed Hameed Mohammed](https://github.com/Magical1337)** (ID: 2205213)
 
 **Supervised by:** Dr. Maged Abdelaty
 📅 **Submission Date:** May 16, 2025
