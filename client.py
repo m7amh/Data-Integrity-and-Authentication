@@ -1,49 +1,30 @@
+import hashpumpy
+from server import verify, SECRET_KEY  # استيراد المفتاح السري من server.py
 
-import hashlib
-import struct
-from Crypto.Hash import MD5
+def perform_attack():
+    original_message = b"amount=100&to=alice"
+    original_mac = "616843154afc11960423deb0795b1e68"
+    data_to_append = b"&admin=true"
 
+    key_len = len(SECRET_KEY)  # نستخدم طول المفتاح السري الحقيقي مباشرة
 
-def hex_to_state(h):
-    # Convert hash to internal state (A,B,C,D)
-    bytes_hash = bytes.fromhex(h)
-    a = struct.unpack('<I', bytes_hash[0:4])[0]
-    b = struct.unpack('<I', bytes_hash[4:8])[0]
-    c = struct.unpack('<I', bytes_hash[8:12])[0]
-    d = struct.unpack('<I', bytes_hash[12:16])[0]
-    return a, b, c, d
+    new_mac, new_message = hashpumpy.hashpump(
+        original_mac,
+        original_message.decode(),
+        data_to_append.decode(),
+        key_len
+    )
 
-def md5_pad(message_bit_length):
-    # MD5 padding as in Merkle-Damgård
-    message_bit_length += 64  # account for the length field itself
-    pad_len = (56 - (message_bit_length // 8) % 64) % 64
-    padding = b'\x80' + b'\x00' * (pad_len - 1)
-    padding += struct.pack('<Q', message_bit_length)
-    return padding
+    forged_message = new_message
+    forged_mac = new_mac
 
-# The known message and its MAC
-intercepted_message = b"amount=100&to=alice"
-original_mac = "614d28d808af46d3702fe35fae67267c"  # Use the value from server.py
-data_to_append = b"&admin=true"
-secret_length_guess = 16  
+    print(f"Using key length = {key_len}")
+    if verify(forged_message, forged_mac):
+        print("[+] Attack successful!")
+        print("Forged message:", forged_message)
+        print("Forged MAC:", forged_mac)
+    else:
+        print("[-] Attack failed.")
 
-# Calculate the deleted length up to the beginning of the new data
-message_bit_length = (secret_length_guess + len(intercepted_message)) * 8
-pad = md5_pad(message_bit_length)
-
-# Recalculate from internal state using Crypto.Hash.MD5
-h = MD5.new()
-h.update(intercepted_message)
-# Pad the message to a block boundary
-
-# Assuming original_mac is the MAC of intercepted_message
-# Set the internal state of MD5 to the original_mac
-h.digest_size = 16  
-h.MD5_state = struct.unpack('<4I', bytes.fromhex(original_mac))
-# Now you can continue hashing with the new data
-h.update(pad + data_to_append)
-forged_mac = h.hexdigest()
-
-
-print("Forged Message:", intercepted_message + pad + data_to_append)
-print("Forged MAC:", forged_mac)
+if __name__ == "__main__":
+    perform_attack()
